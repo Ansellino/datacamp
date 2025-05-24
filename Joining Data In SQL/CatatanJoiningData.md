@@ -1,3 +1,5 @@
+# Penjelasan Awal
+
 -- INNER JOIN: hanya customer yang punya order
 SELECT c.name, o.order_date
 FROM customers c INNER JOIN orders o ON c.id = o.customer_id;
@@ -32,7 +34,7 @@ id | customer_id | order_date | total
 104| 5 | 2024-01-18 | 300000 -- customer_id 5 tidak ada di tabel customers
 ```
 
-1. INNER JOIN - "Customer yang pernah order"
+# 1. INNER JOIN - "Customer yang pernah order"
 
 ```bash
 SELECT c.name, o.order_date, o.total
@@ -51,7 +53,7 @@ Andi | 2024-01-17 | 100000
 
 Citra dan Dian tidak muncul karena belum pernah order. Order 104 tidak muncul karena customer_id 5 tidak ada.
 
-2. LEFT JOIN - "Semua customer + order mereka (kalau ada)"
+# 2. LEFT JOIN - "Semua customer + order mereka (kalau ada)"
 
 ```bash
 SELECT c.name, o.order_date, o.total
@@ -72,7 +74,7 @@ Dian  | NULL       | NULL
 
 Semua customer muncul. Yang belum order ditampilkan dengan NULL.
 
-3. RIGHT JOIN - "Semua order + data customer (kalau ada)"
+# 3. RIGHT JOIN - "Semua order + data customer (kalau ada)"
 
 ```bash
 SELECT c.name, o.order_date, o.total
@@ -92,7 +94,7 @@ NULL | 2024-01-18 | 300000
 
 Semua order muncul. Order dengan customer_id tidak valid ditampilkan dengan name NULL.
 
-4. FULL JOIN - "Semua customer + semua order"
+# 4. FULL JOIN - "Semua customer + semua order"
 
 ```bash
 SELECT c.name, o.order_date, o.total
@@ -123,7 +125,8 @@ RIGHT JOIN: "Order mana yang datanya bermasalah?" - untuk data cleaning
 FULL JOIN: "Audit lengkap customer vs order" - untuk rekonsiliasi data
 ```
 
-SELF JOIN
+# SELF JOIN
+
 JOIN tabel dengan dirinya sendiri. Berguna untuk membandingkan baris dalam tabel yang sama.
 
 Contoh Data - Tabel employees:
@@ -175,7 +178,8 @@ JOIN employees m ON e.manager_id = m.id
 WHERE e.salary > m.salary;
 ```
 
-CROSS JOIN
+# CROSS JOIN
+
 Menghasilkan cartesian product - setiap baris dari tabel pertama dikombinasikan dengan setiap baris dari tabel kedua.
 
 Contoh data:
@@ -258,3 +262,207 @@ CROSS JOIN time_slots t;
 ```
 
 Perhatian: CROSS JOIN bisa menghasilkan data sangat besar (tabel 1000 baris × tabel 1000 baris = 1 juta baris), jadi hati-hati penggunaannya!
+
+# UNION
+
+Menggabungkan hasil dari dua atau lebih query, menghilangkan duplikasi.
+
+Setup Data:
+
+```bash
+-- Tabel customers_jakarta
+id | name    | city
+1  | Andi    | Jakarta
+2  | Budi    | Jakarta
+3  | Citra   | Jakarta
+
+-- Tabel customers_bandung
+id | name    | city
+2  | Budi    | Bandung  -- sama dengan Jakarta (pindah kota)
+4  | Dian    | Bandung
+5  | Eko     | Bandung
+```
+
+Union:
+
+```bash
+SELECT name, city FROM customers_jakarta
+UNION
+SELECT name, city FROM customers_bandung;
+```
+
+Hasil:
+
+```bash
+name  | city
+Andi  | Jakarta
+Budi  | Jakarta
+Budi  | Bandung
+Citra | Jakarta
+Dian  | Bandung
+Eko   | Bandung
+```
+
+# UNION ALL (tanpa menghilangkan duplikasi):
+
+```bash
+SELECT name FROM customers_jakarta
+UNION ALL
+SELECT name FROM customers_bandung;
+```
+
+Hasil:
+
+```bash
+name
+Andi
+Budi
+Citra
+Budi    -- duplikasi tetap muncul
+Dian
+Eko
+```
+
+# INTERSECT
+
+Menampilkan hanya data yang ada di kedua query (irisan/intersection).
+
+```bash
+SELECT name FROM customers_jakarta
+INTERSECT
+SELECT name FROM customers_bandung;
+```
+
+Hasil:
+
+```bash
+name
+Budi    -- hanya Budi yang ada di kedua tabel
+```
+
+# EXCEPT (atau MINUS)
+
+Menampilkan data yang ada di query pertama tapi tidak ada di query kedua.
+
+```bash
+-- Customer Jakarta yang tidak ada di Bandung
+SELECT name FROM customers_jakarta
+EXCEPT
+SELECT name FROM customers_bandung;
+```
+
+Hasil:
+
+```bash
+name
+Andi
+Citra
+```
+
+```bash
+-- Customer Bandung yang tidak ada di Jakarta
+SELECT name FROM customers_bandung
+EXCEPT
+SELECT name FROM customers_jakarta;
+```
+
+Hasil:
+
+```bash
+name
+Dian
+Eko
+```
+
+# Kasus Penggunaan Praktis:
+
+## UNION untuk:
+
+```bash
+-- Gabungkan customer dari berbagai sumber
+SELECT customer_id, name, 'Online' as source FROM online_customers
+UNION
+SELECT customer_id, name, 'Offline' as source FROM store_customers;
+
+-- Gabungkan produk yang terjual hari ini dari berbagai toko
+SELECT product_id, product_name FROM sales_jakarta WHERE date = '2024-01-15'
+UNION
+SELECT product_id, product_name FROM sales_bandung WHERE date = '2024-01-15';
+```
+
+## INTERSECT untuk:
+
+```bash
+-- Customer yang beli di online DAN offline (cross-channel)
+SELECT customer_id FROM online_orders
+INTERSECT
+SELECT customer_id FROM offline_orders;
+
+-- Produk yang tersedia di semua gudang
+SELECT product_id FROM warehouse_jakarta
+INTERSECT
+SELECT product_id FROM warehouse_bandung
+INTERSECT
+SELECT product_id FROM warehouse_surabaya;
+```
+
+## EXCEPT untuk:
+
+```bash
+-- Customer yang belum pernah komplain
+SELECT customer_id FROM customers
+EXCEPT
+SELECT customer_id FROM complaints;
+
+-- Produk yang belum pernah terjual
+SELECT product_id FROM products
+EXCEPT
+SELECT DISTINCT product_id FROM order_items;
+
+-- Employee yang belum mengambil cuti tahun ini
+SELECT employee_id FROM employees
+EXCEPT
+SELECT employee_id FROM leave_requests WHERE YEAR(leave_date) = 2024;
+```
+
+## Aturan Penting:
+
+### 1.Kolom harus sama: Jumlah dan tipe data kolom harus matching
+
+```bash
+-- ❌ Error - jumlah kolom berbeda
+SELECT name, city FROM customers
+UNION
+SELECT name FROM suppliers;
+
+-- ✅ Benar
+SELECT name FROM customers
+UNION
+SELECT name FROM suppliers;
+```
+
+### 2. ORDER BY hanya di akhir:
+
+```bash
+SELECT name FROM customers_jakarta
+UNION
+SELECT name FROM customers_bandung
+ORDER BY name;  -- ORDER BY di akhir saja
+```
+
+### 3. Performance: UNION lebih lambat dari UNION ALL karena harus check duplikasi.
+
+Kombinasi dengan JOIN:
+
+```bash
+-- Customer yang beli produk A atau B
+SELECT DISTINCT c.name
+FROM customers c JOIN orders o ON c.id = o.customer_id
+WHERE o.product_id = 1
+UNION
+SELECT DISTINCT c.name
+FROM customers c JOIN orders o ON c.id = o.customer_id
+WHERE o.product_id = 2;
+```
+
+Ini sangat berguna untuk analisis data kompleks dan laporan yang membutuhkan penggabungan data dari berbagai sumber!
