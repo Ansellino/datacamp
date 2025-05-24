@@ -15,10 +15,12 @@ SELECT c.name, o.order_date
 FROM customers c FULL JOIN orders o ON c.id = o.customer_id;
 
 Setup Data :
+
+```bash
 -- Tabel customers
 id | name | email
 1 | Andi | andi@mail.com
-2 | Budi | budi@mail.com  
+2 | Budi | budi@mail.com
 3 | Citra | citra@mail.com
 4 | Dian | dian@mail.com
 
@@ -28,6 +30,7 @@ id | customer_id | order_date | total
 102| 2 | 2024-01-16 | 250000
 103| 1 | 2024-01-17 | 100000
 104| 5 | 2024-01-18 | 300000 -- customer_id 5 tidak ada di tabel customers
+```
 
 1. INNER JOIN - "Customer yang pernah order"
 
